@@ -1,0 +1,53 @@
+name: 'Slack Failure Notification'
+description: 'Send Slack notification when workflow fails'
+author: 'Your Organization'
+
+inputs:
+  slack-webhook-url:
+    description: 'Slack webhook URL'
+    required: true
+  channel-override:
+    description: 'Override default channel (optional)'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Send Slack Notification
+      shell: bash
+      run: |
+        # Get workflow information
+        ACTOR="${{ github.actor }}"
+        WORKFLOW_NAME="${{ github.workflow }}"
+        
+        # Prepare the message
+        MESSAGE="❌ Pipeline Failed Actor: ${ACTOR} Pipeline: ${WORKFLOW_NAME}"
+        
+        # Prepare JSON payload
+        if [ -n "${{ inputs.channel-override }}" ]; then
+          PAYLOAD=$(cat << EOF
+        {
+          "channel": "${{ inputs.channel-override }}",
+          "text": "${MESSAGE}"
+        }
+        EOF
+        )
+        else
+          PAYLOAD=$(cat << EOF
+        {
+          "text": "${MESSAGE}"
+        }
+        EOF
+        )
+        fi
+        
+        # Send to Slack
+        curl -X POST \
+          -H 'Content-type: application/json' \
+          --data "${PAYLOAD}" \
+          "${{ inputs.slack-webhook-url }}" \
+          --fail --silent --show-error || {
+            echo "Failed to send Slack notification"
+            exit 1
+          }
