@@ -1,15 +1,10 @@
 name: 'Slack Failure Notification'
 description: 'Send Slack notification when workflow fails'
-author: 'Your Organization'
 
 inputs:
   slack-webhook-url:
     description: 'Slack webhook URL'
     required: true
-  channel-override:
-    description: 'Override default channel (optional)'
-    required: false
-    default: ''
 
 runs:
   using: 'composite'
