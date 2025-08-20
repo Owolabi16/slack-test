@@ -1,33 +1,80 @@
-
-name: 'Example CI/CD Pipeline'
+name: 'Test Slack Failure Notification'
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
 
-
 jobs:
-  build:
+  test-success:
+    name: 'Test Success Case'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
+      - name: Successful step
+        run: echo
       
-      - name: Install dependencies
-        run: npm install
-      
-      - name: Run tests
-        run: npm test
-      
-      - name: Build application
-        run: npm run build
-      
-      - name: Notify Slack on Failure
+      - name: Notify Slack on Failure (should not run)
         if: failure()
-        uses: ./.github/actions/  
+        uses: ./.github/actions/slack-failure-notification
         with:
-          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          github-actor: ${{ github.actor }}
+          pipeline-name: ${{ github.workflow }}
+
+  test-failure:
+    name: 'Test Failure Case'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Intentional failure step
+        run: |
+          echo "This step will fail intentionally for testing"
+          exit 1
+      
+      - name: Notify Slack on Failure (should run)
+        if: failure()
+        uses: ./.github/actions/slack-failure-notification
+        with:
+          github-actor: ${{ github.actor }}
+          pipeline-name: ${{ github.workflow }}
+
+  test-failure-with-message:
+    name: 'Test Failure with Custom Message'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Another intentional failure
+        run: |
+          echo "Testing custom message functionality"
+          exit 1
+      
+      - name: Notify Slack with Custom Message
+        if: failure()
+        uses: ./.github/actions/slack-failure-notification
+        with:
+          github-actor: ${{ github.actor }}
+          pipeline-name: ${{ github.workflow }}
+          message: "This is a test failure with additional context"
+
+  test-failure-different-channel:
+    name: 'Test Failure Different Channel'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Failure for different channel test
+        run: |
+          echo "Testing different channel functionality"
+          exit 1
+      
+      - name: Notify Slack Different Channel
+        if: failure()
+        uses: ./.github/actions/slack-failure-notification
+        with:
+          github-actor: ${{ github.actor }}
+          pipeline-name: ${{ github.workflow }}
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL_TEST }}
+          message: "This notification should go to the test channel"
