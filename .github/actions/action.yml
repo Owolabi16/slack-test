@@ -25,13 +25,9 @@ runs:
       env:
         SLACK_WEBHOOK: ${{ inputs.slack-webhook-url }}
         SLACK_COLOR: 'danger'
+        MSG_MINIMAL: 'true'
         SLACK_USERNAME: 'GitHub Actions Bot'
         SLACK_ICON: 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
-        SLACK_TITLE: 'Pipeline Failed'
-        SLACK_MESSAGE: |
-          @${{ inputs.github-actor }} ${{ inputs.pipeline-name }} Failed  ❌ 
-
-          ${{ inputs.message && format('Additional Info: {0}', inputs.message) || '' }}
-          
-          <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Failed Run>
+        SLACK_TITLE: ''
+        SLACK_MESSAGE: '@${{ inputs.github-actor }} ${{ inputs.pipeline-name }} Pipeline Failed ❌${{ inputs.message && format(' - {0}', inputs.message) || '' }} - <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|view failed run>'
         SLACK_FOOTER: 'GitHub Actions'
