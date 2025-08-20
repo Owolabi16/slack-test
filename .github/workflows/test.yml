@@ -1,3 +1,4 @@
+# .github/workflows/test-slack-notification.yml
 name: 'Test Slack Failure Notification'
 
 on:
@@ -13,14 +14,15 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Successful step
-        run: echo
+        run: echo "This step will succeed"
       
       - name: Notify Slack on Failure (should not run)
         if: failure()
-        uses: ./.github/actions
+        uses: ./.github/actions/slack-failure-notification
         with:
           github-actor: ${{ github.actor }}
           pipeline-name: ${{ github.workflow }}
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   test-failure:
     name: 'Test Failure Case'
@@ -35,10 +37,11 @@ jobs:
       
       - name: Notify Slack on Failure (should run)
         if: failure()
-        uses: ./.github/actions
+        uses: ./.github/actions/slack-failure-notification
         with:
           github-actor: ${{ github.actor }}
           pipeline-name: ${{ github.workflow }}
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   test-failure-with-message:
     name: 'Test Failure with Custom Message'
@@ -53,10 +56,11 @@ jobs:
       
       - name: Notify Slack with Custom Message
         if: failure()
-        uses: ./.github/actions
+        uses: ./.github/actions/slack-failure-notification
         with:
           github-actor: ${{ github.actor }}
           pipeline-name: ${{ github.workflow }}
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
           message: "This is a test failure with additional context"
 
   test-failure-different-channel:
@@ -72,9 +76,9 @@ jobs:
       
       - name: Notify Slack Different Channel
         if: failure()
-        uses: ./.github/actions
+        uses: ./.github/actions/slack-failure-notification
         with:
           github-actor: ${{ github.actor }}
           pipeline-name: ${{ github.workflow }}
-          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL_TEST }}
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL_TEST }}  # Different channel webhook
           message: "This notification should go to the test channel"
