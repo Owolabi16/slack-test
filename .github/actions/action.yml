@@ -29,9 +29,8 @@ runs:
         SLACK_ICON: 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
         SLACK_TITLE: 'Pipeline Failed'
         SLACK_MESSAGE: |
-          ❌ Pipeline Failed 
-          Actor: @${{ inputs.github-actor }} 
-          Pipeline: ${{ inputs.pipeline-name }}
+          @${{ inputs.github-actor }} ${{ inputs.pipeline-name }} Failed  ❌ 
+
           ${{ inputs.message && format('Additional Info: {0}', inputs.message) || '' }}
           
           <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Failed Run>
