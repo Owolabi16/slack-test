@@ -1,0 +1,33 @@
+name: 'Slack Failure Notification'
+description: 'Send Slack notification when workflow fails using third-party action'
+
+inputs:
+  github-actor:
+    description: 'GitHub actor who triggered the workflow'
+    required: true
+  pipeline-name:
+    description: 'Name of the pipeline'
+    required: true
+  slack-webhook-url:
+    description: 'Optional Slack webhook URL (uses org default if not provided)'
+    required: false
+    default: ''
+  message:
+    description: 'Optional additional message'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Send Slack Failure Notification
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ inputs.slack-webhook-url }}
+        SLACK_COLOR: 'danger'
+        MSG_MINIMAL: 'true'
+        SLACK_USERNAME: 'GitHub Actions Bot'
+        SLACK_ICON: 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
+        SLACK_TITLE: ''
+        SLACK_MESSAGE: "@${{ inputs.github-actor }} ${{ inputs.pipeline-name }} Pipeline Failed ❌${{ inputs.message && format(' - {0}', inputs.message) || '' }} - <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|view failed run>"
+        SLACK_FOOTER: 'GitHub Actions'
