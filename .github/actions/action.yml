@@ -20,14 +20,27 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Send Slack Failure Notification
-      uses: rtCamp/action-slack-notify@v2
-      env:
-        SLACK_WEBHOOK: ${{ inputs.slack-webhook-url }}
-        SLACK_COLOR: 'danger'
-        MSG_MINIMAL: 'true'
-        SLACK_USERNAME: 'GitHub Actions Bot'
-        SLACK_ICON: 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
-        SLACK_TITLE: ''
-        SLACK_MESSAGE: "@${{ inputs.github-actor }} ${{ inputs.pipeline-name }} Pipeline Failed ❌${{ inputs.message && format(' - {0}', inputs.message) || '' }} - <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|view failed run>"
-        SLACK_FOOTER: 'GitHub Actions'
+    # - name: Send Slack Failure Notification
+    #   uses: rtCamp/action-slack-notify@v2
+    #   env:
+    #     SLACK_WEBHOOK: ${{ inputs.slack-webhook-url }}
+    #     SLACK_COLOR: 'danger'
+    #     MSG_MINIMAL: 'true'
+    #     SLACK_USERNAME: 'GitHub Actions Bot'
+    #     SLACK_ICON: 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
+    #     SLACK_TITLE: ''
+    #     SLACK_MESSAGE: "@${{ inputs.github-actor }} ${{ inputs.pipeline-name }} Pipeline Failed ❌${{ inputs.message && format(' - {0}', inputs.message) || '' }} - <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|view failed run>"
+    #     SLACK_FOOTER: 'GitHub Actions'
+
+    - name: Post a message in a channel
+      uses: slackapi/slack-github-action@v2.1.1
+      with:
+        webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+        webhook-type: incoming-webhook
+        payload: |
+          text: "*GitHub Action build result*: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+          blocks:
+            - type: "section"
+              text:
+                type: "mrkdwn"
+                text: "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
