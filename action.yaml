@@ -1,33 +1,182 @@
+# name: 'Slack Failure Notification'
+# description: 'Send Slack notification when workflow fails using third-party action'
+
+# inputs:
+#   github-actor:
+#     description: 'GitHub actor who triggered the workflow'
+#     required: true
+#   pipeline-name:
+#     description: 'Name of the pipeline'
+#     required: true
+#   slack-webhook-url:
+#     description: 'Optional Slack webhook URL (uses org default if not provided)'
+#     required: false
+#     default: ''
+#   message:
+#     description: 'Optional additional message'
+#     required: false
+#     default: ''
+
+# runs:
+#   using: 'composite'
+#   steps:
+#     - name: Post a message in a channel
+#       uses: slackapi/slack-github-action@v2.1.1
+#       with:
+#         webhook: ${{ inputs.slack-webhook-url }}
+#         webhook-type: incoming-webhook
+#         payload: |
+#           blocks:
+#             - type: "section"
+#               text:
+#                 type: "mrkdwn"
+#                 text: "@${{ inputs.github-actor }} ${{ inputs.pipeline-name }} Pipeline Failed ❌${{ inputs.message && format(' - {0}', inputs.message) || '' }} - <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|view failed run>"
+
 name: 'Slack Failure Notification'
-description: 'Send Slack notification when workflow fails using third-party action'
+description: 'Send Slack notifications when CI pipelines fail with automatic context detection'
+
+branding:
+  icon: 'alert-circle'
+  color: 'red'
 
 inputs:
-  github-actor:
-    description: 'GitHub actor who triggered the workflow'
-    required: true
-  pipeline-name:
-    description: 'Name of the pipeline'
-    required: true
-  slack-webhook-url:
-    description: 'Optional Slack webhook URL (uses org default if not provided)'
+  custom-message:
+    description: 'Optional custom message to include'
     required: false
     default: ''
-  message:
-    description: 'Optional additional message'
+  slack-webhook-url:
+    description: 'Slack webhook URL for notifications'
     required: false
     default: ''
 
 runs:
   using: 'composite'
   steps:
-    - name: Post a message in a channel
+    - name: Extract context
+      id: context
+      shell: bash
+      run: |
+        # Set error handling
+        set -euo pipefail
+        
+        # Extract branch name from GITHUB_REF
+        BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+        if [[ "$GITHUB_REF" == refs/pull/* ]]; then
+          PR_NUMBER="${GITHUB_REF#refs/pull/}"
+          PR_NUMBER="${PR_NUMBER%/merge}"
+          BRANCH_NAME="PR #${PR_NUMBER}"
+        elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
+          BRANCH_NAME="tag: ${GITHUB_REF#refs/tags/}"
+        fi
+        
+        # Get commit message (first line only, truncated)
+        COMMIT_MSG=$(git log -1 --pretty=format:%s 2>/dev/null || echo "No commit message available")
+        if [ ${#COMMIT_MSG} -gt 80 ]; then
+          COMMIT_MSG="${COMMIT_MSG:0:77}..."
+        fi
+        
+        # Escape special characters for JSON
+        COMMIT_MSG=$(echo "$COMMIT_MSG" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/ /g; s/\r//g; s/\n/ /g')
+        
+        # Get short SHA
+        COMMIT_SHA_SHORT="${GITHUB_SHA:0:7}"
+        
+        # Export variables for next step
+        echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+        echo "commit_message=${COMMIT_MSG}" >> $GITHUB_OUTPUT
+        echo "commit_sha_short=${COMMIT_SHA_SHORT}" >> $GITHUB_OUTPUT
+        
+        # Build custom message suffix if provided
+        CUSTOM_MSG_SUFFIX=""
+        if [[ -n "${{ inputs.custom-message }}" ]]; then
+          CUSTOM_MSG_SUFFIX=" | Note: ${{ inputs.custom-message }}"
+        fi
+        echo "custom_msg_suffix=${CUSTOM_MSG_SUFFIX}" >> $GITHUB_OUTPUT
+
+    - name: Send Slack Failure Notification
       uses: slackapi/slack-github-action@v2.1.1
       with:
         webhook: ${{ inputs.slack-webhook-url }}
         webhook-type: incoming-webhook
         payload: |
-          blocks:
-            - type: "section"
-              text:
-                type: "mrkdwn"
-                text: "@${{ inputs.github-actor }} ${{ inputs.pipeline-name }} Pipeline Failed ❌${{ inputs.message && format(' - {0}', inputs.message) || '' }} - <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|view failed run>"
+          {
+            "text": "CI Pipeline Failed: ${{ github.workflow }}",
+            "blocks": [
+              {
+                "type": "header",
+                "text": {
+                  "type": "plain_text",
+                  "text": "❌ CI Pipeline Failed",
+                  "emoji": true
+                }
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Pipeline:*\n${{ github.workflow }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Repository:*\n<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}>"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Branch:*\n`${{ steps.context.outputs.branch_name }}`"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Failed by:*\n@${{ github.actor }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Job:*\n${{ github.job }}"
+                  }
+                ]
+              },
+              {
+                "type": "context",
+                "elements": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "💬 *Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ steps.context.outputs.commit_sha_short }}`> ${{ steps.context.outputs.commit_message }}${{ steps.context.outputs.custom_msg_suffix }}"
+                  }
+                ]
+              },
+              {
+                "type": "actions",
+                "elements": [
+                  {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View Failed Run",
+                      "emoji": true
+                    },
+                    "style": "danger",
+                    "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  },
+                  {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View Repository",
+                      "emoji": true
+                    },
+                    "url": "${{ github.server_url }}/${{ github.repository }}"
+                  }
+                ]
+              },
+              {
+                "type": "context",
+                "elements": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "Run #${{ github.run_number }} | ID: `${{ github.run_id }}`"
+                  }
+                ]
+              }
+            ]
+          }
+
