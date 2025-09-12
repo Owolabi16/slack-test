@@ -165,7 +165,7 @@ runs:
                 "elements": [
                   {
                     "type": "mrkdwn",
-                    "text": "💬 *Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ steps.context.outputs.commit_sha_short }}`> ${{ steps.context.outputs.commit_message }}${{ steps.context.outputs.custom_msg_suffix }}"
+                    "text": "💬 *Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ steps.context.outputs.commit_sha_short }}` ${{ steps.context.outputs.commit_message }}>${{ steps.context.outputs.custom_msg_suffix }}"
                   }
                 ]
               },
