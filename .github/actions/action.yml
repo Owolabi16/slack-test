@@ -31,7 +31,7 @@
 #           }
 
 
-name: 'Slack Failure Notificationsss'
+name: 'Slack Failure Notification'
 description: 'Send Slack notifications when CI pipelines fail with automatic context detection'
 
 branding:
@@ -92,6 +92,28 @@ runs:
         fi
         echo "custom_msg_suffix=${CUSTOM_MSG_SUFFIX}" >> $GITHUB_OUTPUT
 
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+    
+    - name: Build Slack Mapper
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+        go mod init slack-mapper 2>/dev/null || true
+        go get gopkg.in/yaml.v2
+        go build -o slack-mapper main.go
+    
+    - name: Get Slack User ID
+      id: slack-user
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+        SLACK_USER_ID=$(./slack-mapper "${{ inputs.github-actor }}")
+        echo "slack_user_id=${SLACK_USER_ID}" >> $GITHUB_OUTPUT
+        echo "Found Slack user ID for ${{ inputs.github-actor }}: ${SLACK_USER_ID}"        
+
     - name: Send Slack Failure Notification
       uses: slackapi/slack-github-action@v2.1.1
       with:
@@ -139,7 +161,7 @@ runs:
                 "elements": [
                   {
                     "type": "mrkdwn",
-                    "text": "💬 *Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ steps.context.outputs.commit_sha_short }}` ${{ steps.context.outputs.commit_message }}>${{ steps.context.outputs.custom_msg_suffix }}"
+                    "text": "💬 *Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ steps.context.outputs.commit_sha_short }}`> ${{ steps.context.outputs.commit_message }}${{ steps.context.outputs.custom_msg_suffix }}"
                   }
                 ]
               },
