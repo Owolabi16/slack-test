@@ -1,36 +1,3 @@
-# name: 'Slack Failure Notification'
-# description: 'Send Slack notification when workflow fails using third-party action'
-
-# inputs:
-#   github-actor:
-#     description: 'GitHub actor who triggered the workflow'
-#     required: true
-#   pipeline-name:
-#     description: 'Name of the pipeline'
-#     required: true
-#   slack-webhook-url:
-#     description: 'Optional Slack webhook URL (uses org default if not provided)'
-#     required: false
-#     default: ''
-#   message:
-#     description: 'Optional additional message'
-#     required: false
-#     default: ''
-
-# runs:
-#   using: 'composite'
-#   steps:
-#     - name: Send Slack Failure Notification
-#       uses: slackapi/slack-github-action@v2.1.1
-#       with:
-#         webhook: ${{ inputs.slack-webhook-url }}
-#         webhook-type: incoming-webhook
-#         payload: |
-#           {
-#             "text": "@${{ inputs.github-actor }} ${{ inputs.pipeline-name }} Pipeline Failed ❌${{ inputs.message && format(' - {0}', inputs.message) || '' }} - <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|view failed run>"
-#           }
-
-
 name: 'Slack Failure Notification'
 description: 'Send Slack notifications when CI pipelines fail with automatic context detection'
 

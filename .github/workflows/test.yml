@@ -21,7 +21,6 @@ jobs:
         uses: ./.github/actions
         with:
           github-actor: ${{ github.actor }}
-          pipeline-name: ${{ github.workflow }}
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   test-failure:
@@ -40,7 +39,6 @@ jobs:
         uses: ./
         with:
           github-actor: ${{ github.actor }}
-          pipeline-name: ${{ github.workflow }}
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   test-failure-with-message:
@@ -59,7 +57,6 @@ jobs:
         uses: ./
         with:
           github-actor: ${{ github.actor }}
-          pipeline-name: ${{ github.workflow }}
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
           message: "This is a test failure with additional context"
 
@@ -79,6 +76,5 @@ jobs:
         uses: ./
         with:
           github-actor: ${{ github.actor }}
-          pipeline-name: ${{ github.workflow }}
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL_TEST }}  # Different channel webhook
           message: "This notification should go to the test channel"
