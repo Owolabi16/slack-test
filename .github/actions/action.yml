@@ -39,6 +39,9 @@ branding:
   color: 'red'
 
 inputs:
+  github-actor:
+    description: 'GitHub actor who triggered the workflow'
+    required: true
   custom-message:
     description: 'Optional custom message to include'
     required: false
@@ -148,7 +151,7 @@ runs:
                   },
                   {
                     "type": "mrkdwn",
-                    "text": "*Failed by:*\n@${{ github.actor }}"
+                    "text": "*Failed by:*\n<@${{ steps.slack-user.outputs.slack_user_id }}>"
                   },
                   {
                     "type": "mrkdwn",
